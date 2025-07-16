@@ -1,29 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:joy_app/l10n/generated/app_localizations.dart';
+import 'package:joy_app/src/common_widgets/empty_state_widget.dart';
+import 'package:joy_app/src/common_widgets/error_state_widget.dart';
+import 'package:joy_app/src/feature/chat/presentation/components/chat_input_field.dart';
+import 'package:joy_app/src/feature/chat/presentation/components/chat_message_widget.dart';
+import 'package:joy_app/src/feature/chat/presentation/provider/hunter_chat_screen_notifier.dart';
 
-import 'package:language_hunter_app/src/feature/hunter_auth/presentation/provider/hunter_auth_provider.dart';
-import 'package:language_hunter_app/src/feature/hunter_chat/domain/model/chat_message.dart';
-import 'package:language_hunter_app/src/feature/hunter_chat/presentation/components/circular_image.dart';
-import 'package:language_hunter_app/src/feature/hunter_chat/presentation/components/customUrlText.dart';
-import 'package:language_hunter_app/src/feature/hunter_chat/presentation/provider/hunter_chat_provider.dart';
-import 'package:language_hunter_app/src/feature/hunter_chat/util/chat_utility.dart';
+enum ChatEntry { FromHome, FromActiveChallenge }
 
 class HunterChatScreen extends StatefulHookConsumerWidget {
-  final String documentName = 'admin-101';
-  const HunterChatScreen({super.key});
+  final ChatEntry chatEntry;
+  final int? batchId;
+  const HunterChatScreen({
+    super.key,
+    required this.chatEntry,
+    this.batchId,
+  });
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
       _HunterChatScreenState();
 }
 
 class _HunterChatScreenState extends ConsumerState<HunterChatScreen> {
-  final messageController = TextEditingController();
-  late GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  late final chatProvider = hunterChatProvider(widget.documentName);
-  final _focusNode = FocusNode();
-
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late ScrollController _scrollController;
-  bool _isFetchingMore = false;
 
   @override
   void initState() {
@@ -32,289 +33,139 @@ class _HunterChatScreenState extends ConsumerState<HunterChatScreen> {
     _scrollController.addListener(_onScroll);
   }
 
-  void _onScroll() {
+  void _onScroll() async {
+    // Check if we are near the top (end of the list, for reverse: true)
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      // Avoid multiple calls
-      if (!_isFetchingMore) {
-        _isFetchingMore = true;
-        ref
-            .read(chatProvider.notifier)
-            .loadMoreMessages(widget.documentName)
-            .then((_) => _isFetchingMore = false);
+      final chatProvider = hunterChatScreenNotifierProvider(
+        widget.chatEntry,
+        widget.batchId,
+      );
+      final screenState = ref.read(chatProvider).value;
+
+      // Only load more if there are more messages and not already loading
+      if (screenState != null &&
+          screenState.hasMore &&
+          !screenState.isLoading) {
+        final screenNotifier = ref.read(chatProvider.notifier);
+        await screenNotifier.loadMoreMessages();
       }
-    }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose(); // Clean up the controller
-    super.dispose();
-  }
-
-  Widget _chatScreenBody() {
-    final chatState = ref.watch(chatProvider);
-
-    return chatState.when(
-      data: (messages) {
-        if (messages.isEmpty) {
-          return const Center(
-            child: Text(
-              'No message found',
-              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-            ),
-          );
-        }
-        return ListView.builder(
-          reverse: true, // To start at the latest message
-          shrinkWrap: true,
-          physics: const BouncingScrollPhysics(),
-          controller: _scrollController,
-          itemCount: messages.length,
-          itemBuilder: (context, index) {
-            return chatMessage(messages[index]!, context);
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, _) => Center(child: Text('Error: $err')),
-    );
-  }
-
-  // Widget _chatScreenBody() {
-  //   final chatState = ref.watch(chatProvider);
-  //   if (chatState.value == null || chatState.value!.isEmpty) {
-  //     return const Center(
-  //       child: Text(
-  //         'No message found',
-  //         style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-  //       ),
-  //     );
-  //   }
-
-  //   return chatState.when(
-  //     data: (messages) => ListView.builder(
-  //       reverse: true, // To start at the latest message
-  //       shrinkWrap: true,
-  //       physics: const BouncingScrollPhysics(),
-  //       controller: _scrollController,
-  //       itemCount: messages.length,
-  //       itemBuilder: (context, index) {
-  //         return chatMessage(messages[index]!, context);
-  //       },
-  //     ),
-  //     loading: () => const CircularProgressIndicator(),
-  //     error: (err, _) => Text('Error: $err'),
-  //   );
-  // }
-
-  Widget chatMessage(ChatMessage message, BuildContext context) {
-    // if (senderId == null) {
-    //   return Container();
-    // }
-    // if (message.senderId == senderId) {
-    //   return _message(message, true);
-    // } else {
-    //   return _message(message, false);
-    // }
-    return _message(message, false, context);
-  }
-
-  Widget _message(ChatMessage chat, bool myMessage, BuildContext context) {
-    var width = MediaQuery.of(context).size.width;
-    return Column(
-      crossAxisAlignment:
-          myMessage ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      mainAxisAlignment:
-          myMessage ? MainAxisAlignment.end : MainAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: <Widget>[
-            const SizedBox(
-              width: 15,
-            ),
-            myMessage
-                ? const SizedBox()
-                : CircleAvatar(
-                    backgroundColor: Colors.transparent,
-                    backgroundImage: customAdvanceNetworkImage(null),
-                  ),
-            Expanded(
-              child: Container(
-                alignment:
-                    myMessage ? Alignment.centerRight : Alignment.centerLeft,
-                margin: EdgeInsets.only(
-                  right: myMessage ? 10 : (width / 4),
-                  top: 20,
-                  left: myMessage ? (width / 4) : 10,
-                ),
-                child: Stack(
-                  children: <Widget>[
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                          borderRadius: getBorder(myMessage),
-                          color: Colors.blueGrey),
-                      child: UrlText(
-                        text: chat.message!,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: myMessage ? Colors.white : Colors.black,
-                        ),
-                        urlStyle: TextStyle(
-                          fontSize: 16,
-                          color: myMessage ? Colors.white : Colors.blue,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.only(right: 10, left: 10),
-          child: Text(
-            ChatUtility.getChatTime(chat.createdAt),
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        )
-      ],
-    );
-  }
-
-  BorderRadius getBorder(bool myMessage) {
-    return BorderRadius.only(
-      topLeft: const Radius.circular(20),
-      topRight: const Radius.circular(20),
-      bottomRight:
-          myMessage ? const Radius.circular(0) : const Radius.circular(20),
-      bottomLeft:
-          myMessage ? const Radius.circular(20) : const Radius.circular(0),
-    );
-  }
-
-  Widget _bottomEntryField() {
-    return Align(
-      alignment: Alignment.bottomLeft,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: <Widget>[
-          const Divider(
-            thickness: 0,
-            height: 1,
-          ),
-          TextField(
-            onSubmitted: (val) async {
-              submitMessage();
-            },
-            focusNode: _focusNode,
-            controller: messageController,
-            decoration: InputDecoration(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
-              alignLabelWithHint: true,
-              hintText: 'Start with a message...',
-              suffixIcon: IconButton(
-                  icon: const Icon(Icons.send), onPressed: submitMessage),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Future<bool> _onWillPop() async {
-  //   state.setIsChatScreenOpen = false;
-  //   state.onChatScreenClosed();
-  //   return true;
-  // }
-
-  void submitMessage() {
-    final chatState = ref.watch(chatProvider);
-    var authState = ref.watch(hunterAuthProvider);
-    ChatMessage message;
-    message = ChatMessage(
-        message: messageController.text,
-        createdAt: DateTime.now().toUtc().toString(),
-        senderId: authState.userId.toString(),
-        receiverId: "chatState.chatUser!.userId!",
-        seen: false,
-        timeStamp: DateTime.now().toUtc().millisecondsSinceEpoch,
-        senderName: "SenderName");
-    if (messageController.text.isEmpty) {
-      return;
-    }
-    ref.read(chatProvider.notifier).submitMessage(message);
-    Future.delayed(const Duration(milliseconds: 50)).then((_) {
-      messageController.clear();
-      // Request focus after submitting the message
-      _focusNode.requestFocus();
-    });
-    try {
-      if (chatState.value != null &&
-          chatState.value!.length > 1 &&
-          _scrollController.offset > 0) {
-        _scrollController.animateTo(
-          0.0,
-          curve: Curves.easeOut,
-          duration: const Duration(milliseconds: 300),
-        );
-      }
-    } catch (e) {
-      print("[Error] $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
+    final locale = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final chatProvider = hunterChatScreenNotifierProvider(
+      widget.chatEntry,
+      widget.batchId,
+    );
+    final screenState = ref.watch(chatProvider);
+
+    ref.listen(chatProvider.select((s) => s.value?.messages.length),
+        (previous, next) {
+      // This listener triggers when the number of messages changes.
+      // We only want to auto-scroll when the current user sends a message.
+      if ((previous ?? 0) < (next ?? 0)) {
+        final latestMessage = ref.read(chatProvider).value?.messages.first;
+        final currentUser = ref.read(chatProvider).value?.currentUser;
+
+        if (latestMessage != null &&
+            currentUser != null &&
+            latestMessage.user?.id == currentUser.id) {
+          // A new message was added by the current user. Scroll to the top of the reversed list.
+          // We use a short delay to ensure the ListView has rebuilt before we scroll.
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (_scrollController.hasClients) {
+              _scrollController.animateTo(0.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut);
+            }
+          });
+        }
+      }
+    });
+
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
+        centerTitle: true,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            UrlText(
-              text: "state.chatUser!.displayName!",
-              style: const TextStyle(
-                  color: Colors.black87,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
+          children: [
+            Text(
+              locale.title_chat,
+              style: theme.textTheme.titleLarge,
             ),
             Text(
-              "state.chatUser!.userName!",
-              style: const TextStyle(color: Colors.blue, fontSize: 15),
-            )
+              screenState.value?.chatTitle ?? '',
+              style: theme.textTheme.titleSmall,
+            ),
           ],
         ),
-        iconTheme: const IconThemeData(color: Colors.blue),
-        backgroundColor: Colors.white,
-        actions: <Widget>[
-          IconButton(
-              icon: const Icon(Icons.info, color: Colors.green),
-              onPressed: () {
-                // Navigator.pushNamed(context, '/ConversationInformation');
-              })
-        ],
       ),
-      body: SafeArea(
-        child: Stack(
+      body: screenState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => ErrorStateWidget(
+          title: locale.title_error,
+          description: err.toString(),
+          actionText: locale.try_again,
+          onActionPressed: () => ref.invalidate(chatProvider),
+        ),
+        data: (state) => Column(
           children: <Widget>[
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 50),
-                child: _chatScreenBody(),
-              ),
+            // Message List
+            Expanded(
+              child: Builder(builder: (context) {
+                if (state.messageKey != null) {
+                  return ErrorStateWidget(
+                      title: locale.title_error,
+                      description: state.messageKey,
+                      actionText: locale.try_again,
+                      onActionPressed: () => ref.invalidate(chatProvider));
+                }
+                if (state.messages.isEmpty) {
+                  return EmptyStateWidget(message: locale.empty_chat);
+                }
+                return ListView.builder(
+                  reverse: true, // To start at the latest message
+                  shrinkWrap: true,
+                  physics:
+                      const BouncingScrollPhysics(), // Add physics for better feel
+                  controller:
+                      _scrollController, // Attach scroll controller for pagination
+                  itemCount: state.messages.length,
+                  itemBuilder: (context, index) {
+                    final message = state.messages[index];
+                    final isMyMessage =
+                        message.user?.id == state.currentUser?.id;
+                    return ChatMessageWidget(
+                      chat: message,
+                      myMessage: isMyMessage,
+                      isChatWithAdmin: ChatEntry.FromHome == widget.chatEntry,
+                    );
+                  },
+                );
+              }),
             ),
-            _bottomEntryField()
+            const Divider(
+              thickness: 0,
+              height: 1,
+            ),
+            // Chat Input Field
+            ChatInputField(
+              chatEntry: widget.chatEntry,
+              batchId: widget.batchId,
+            ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }

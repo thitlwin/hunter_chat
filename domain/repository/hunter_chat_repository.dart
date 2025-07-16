@@ -1,10 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:language_hunter_app/src/feature/hunter_chat/domain/model/chat_message.dart';
-
-typedef HunterChatResult = Future<Either<Left, List<ChatMessage?>>>;
+import 'package:joy_app/src/core/utils/failure.dart';
+import 'package:joy_app/src/feature/chat/domain/model/chat_message_domain.dart';
 
 abstract class IHunterChatRepository {
-  HunterChatResult getHunterChat(String documentName);
-  Future<Either<Left, void>> sendHunterChat(
-      String documentName, ChatMessage message);
+  Stream<List<ChatMessageDomain>> getHunterChatStream(String documentName);
+  Future<Either<Failure, void>> sendHunterChat(
+      String documentName, ChatMessageDomain message);
+
+  Future<Either<Failure, List<String>>> uploadChatAttachments(
+      {required List<String> filePaths});
+
+  Future<Either<Failure, List<ChatMessageDomain>>> getHunterChat(
+      String documentName,
+      {DocumentSnapshot? lastDoc});
 }

@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:language_hunter_app/src/feature/hunter_chat/data/chat_constants.dart';
+import 'package:joy_app/src/feature/chat/data/chat_constants.dart';
 
 class CircularImage extends StatelessWidget {
   const CircularImage(

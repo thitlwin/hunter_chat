@@ -7,7 +7,7 @@ part of 'hunter_chat_repository.dart';
 // **************************************************************************
 
 String _$hunterChatRepositoryHash() =>
-    r'a0c6b1e163dbb71a2d1dd0f00571a62b29f43380';
+    r'75c93b277977c0ccd75570ab96a91ee36bbb5705';
 
 /// See also [hunterChatRepository].
 @ProviderFor(hunterChatRepository)
