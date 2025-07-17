@@ -68,7 +68,7 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
       ChatEntry chatEntry, int authUserId) {
     if (chatEntry == ChatEntry.FromHome) {
       final documentName = 'admin-${authUserId}';
-      return (documentName, "Joy Admin");
+      return (documentName, "JOY Admin");
     } else if (chatEntry == ChatEntry.FromActiveChallenge) {
       final documentName = 'group-${batchId}';
       var title;
@@ -79,7 +79,7 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
 
         title = selectedChallengeAsyncValue.maybeWhen(
             data: (data) {
-              return data?.productTitle ?? "";
+              return data.productTitle ?? "";
             },
             orElse: () => "Group Chat");
       }
