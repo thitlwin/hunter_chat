@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:joy_app/src/feature/active_programs/presentation/provider/active_programs_provider.dart';
+import 'package:joy_app/src/feature/chat/data/chat_constants.dart';
 import 'package:joy_app/src/feature/chat/data/repository/hunter_chat_repository.dart';
 import 'package:joy_app/src/feature/chat/domain/model/chat_message_domain.dart';
 import 'package:joy_app/src/feature/chat/presentation/model/chat_screen_state.dart';
@@ -43,7 +44,7 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
     final result = await repository.getHunterChat(documentName, lastDoc: null);
 
     // Set up the real-time stream listener AFTER the initial state is built
-    _setupStreamListener(documentName);
+    _subscribeChatStream(documentName);
 
     return result.fold(
       (failure) => throw failure, // Propagate error to AsyncError
@@ -90,45 +91,40 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
   }
 
   // This method sets up the listener for real-time updates
-  void _setupStreamListener(String documentName) {
+  void _subscribeChatStream(String documentName) {
     ref.listen<AsyncValue<List<ChatMessageDomain>>>(
       chatMessagesStreamProvider(documentName),
       (previous, next) {
-        final newMessages = next.value; // Get the new messages from the stream
-        final currentState =
-            state.value; // Get the current state of the notifier
+        final streamMessages = next.value;
+        final currentState = state.value;
 
-        // Only proceed if we have new messages from the stream and a valid current state
-        if (newMessages == null ||
-            newMessages.isEmpty ||
-            currentState == null) {
+        if (streamMessages == null || currentState == null) {
           return;
         }
 
-        // Create a set of existing message IDs for efficient duplicate checking
-        final existingMessageIds =
-            currentState.messages.map((m) => m.id).toSet();
+        // Create a map of the current messages for easy updating and de-duplication.
+        // Use the message ID as the key.
+        final messagesMap = {
+          for (var msg in currentState.messages)
+            if (msg.id != null && msg.id!.isNotEmpty) msg.id!: msg
+        };
 
-        // Filter out messages that are already in our current state (e.g., from initial load or optimistic update)
-        final uniqueNewMessages = newMessages
-            .where((m) => !existingMessageIds.contains(m.id))
-            .toList();
-
-        if (uniqueNewMessages.isNotEmpty) {
-          // Merge new unique messages at the beginning (assuming reverse chronological order)
-          final updatedMessages = [
-            ...uniqueNewMessages,
-            ...currentState.messages
-          ];
-          state = AsyncValue.data(currentState.copyWith(
-            messages: updatedMessages,
-            // Preserve other UI-related state
-            chatContent: currentState.chatContent,
-            imageFiles: currentState.imageFiles,
-            videoFiles: currentState.videoFiles,
-            otherFiles: currentState.otherFiles,
-          ));
+        // Update the map with the new messages from the stream.
+        // This will add new messages and overwrite existing ones with updated data
+        // (e.g., when a file upload completes and `isUploading` changes).
+        for (final streamMessage in streamMessages) {
+          if (streamMessage.id != null && streamMessage.id!.isNotEmpty) {
+            messagesMap[streamMessage.id!] = streamMessage;
+          }
         }
+
+        // Convert the map back to a list and sort it to maintain order.
+        final updatedMessages = messagesMap.values.toList();
+        updatedMessages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+        // Update the state with the new, merged list of messages.
+        state =
+            AsyncValue.data(currentState.copyWith(messages: updatedMessages));
       },
     );
   }
@@ -161,6 +157,8 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
     final message =
         ChatMessageDomain.empty(messageDateTime: messageDateTime).copyWith(
       content: chatContent,
+      isUploading: filePaths.isNotEmpty,
+      fileUrls: filePaths,
       user: ChatUserDomain(
         // Use currentUser from state
         id: currentState.currentUser!.id,
@@ -215,7 +213,7 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
     state = AsyncValue.data(currentState.copyWith(imageFiles: updatedImages));
   }
 
-  void removeOtherFile(XFile file) {
+  void removeAttachedFile(XFile file) {
     final currentState = state.value;
     if (currentState == null) return;
     final currentOthers = currentState.otherFiles;
@@ -225,30 +223,35 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
     state = AsyncValue.data(currentState.copyWith(otherFiles: updatedOthers));
   }
 
-  void _sendMessage(ChatMessageDomain message) async {
+  Future<DocumentReference<Object?>> _sendMessage(
+      ChatMessageDomain message) async {
     final currentState = state.value;
-    if (currentState == null) return;
+    if (currentState == null) {
+      return Future.error(Exception('Current state is null.'));
+    }
 
     final repository = ref.read(hunterChatRepositoryProvider);
     final result = await repository.sendHunterChat(
         currentState.firebaseChatDocumentName, message);
 
-    result.fold(
+    return result.fold(
       (failure) {
         state = AsyncValue.data(currentState.copyWith(
           messageKey: failure.errorMessage,
         ));
+        throw Exception(failure.errorMessage);
       },
-      (_) {
+      (docRef) {
         // OPTIMISTIC UPDATE:
         // Add new message to the beginning of the list (assuming reverse chronological order)
         // This makes the UI feel instantaneous. The stream from Firestore will
         // shortly push the canonical update, which will overwrite this optimistic one.
         // This is usually the desired behavior for a great user experience.
-        final updatedMessages = [message, ...currentState.messages];
+        final messageWithId = message.copyWith(id: docRef.id);
+        final updatedMessages = [messageWithId, ...currentState.messages];
         // Update state with new ChatScreenState instance
         state = AsyncValue.data(currentState.copyWith(
-          messages: updatedMessages, // Optimistic update
+          messages: updatedMessages, // Optimistic update with ID
           isLoading: false,
           chatContent: '',
           imageFiles: null,
@@ -257,6 +260,7 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
           messageKey: null,
           currentUser: currentState.currentUser,
         ));
+        return docRef;
       },
     );
   }
@@ -266,6 +270,7 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
     final currentState = state.value;
     if (currentState == null) return;
 
+    final chatDocRef = await _sendMessage(message);
     final repository = ref.read(hunterChatRepositoryProvider);
     final uploadResult =
         await repository.uploadChatAttachments(filePaths: filePaths);
@@ -275,9 +280,11 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
       (failure) => state = AsyncValue.data(currentState.copyWith(
           messageKey: failure.errorMessage, isLoading: false)),
       (fileUrls) {
-        final messageWithFiles = message.copyWith(fileUrls: fileUrls);
-        // After files are uploaded, send the message
-        _sendMessage(messageWithFiles);
+        // Update the chat message with the file URLs & change isUploading to false
+        chatDocRef.update({
+          ChatConstants.files_field: fileUrls,
+          ChatConstants.isUploading_field: false,
+        });
       },
     );
   }

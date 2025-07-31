@@ -49,8 +49,8 @@ final class HunterChatRepository implements IHunterChatRepository {
           .map((doc) {
             final data = doc.data();
             if (data is Map<String, dynamic>) {
-              return ChatMessageDomain.fromJson(data)
-                  .copyWith(documentSnapshot: doc);
+              return ChatMessageDomain.fromJson(data).copyWith(
+                  id: doc.id, documentSnapshot: doc); // Set the document ID
             }
             return null;
           })
@@ -74,7 +74,8 @@ final class HunterChatRepository implements IHunterChatRepository {
       return query.snapshots().map((snapshot) => snapshot.docs.map((doc) {
             return ChatMessageDomain.fromJson(
                     doc.data() as Map<String, dynamic>)
-                .copyWith(documentSnapshot: doc);
+                .copyWith(
+                    id: doc.id, documentSnapshot: doc); // Set the document ID
           }).toList());
     } on FirebaseException catch (e) {
       throw Failure.unexpectedError('Firestore error: ${e.message}');
@@ -84,7 +85,7 @@ final class HunterChatRepository implements IHunterChatRepository {
   }
 
   @override
-  Future<Either<Failure, void>> sendHunterChat(
+  Future<Either<Failure, DocumentReference<Object?>>> sendHunterChat(
     String documentName,
     ChatMessageDomain message,
   ) async {
@@ -93,11 +94,10 @@ final class HunterChatRepository implements IHunterChatRepository {
       final messageMap = message.toJson();
       messageMap['user'] =
           message.user?.toJson(); // Explicitly serialize the 'user' field
-      await counterDoc.add(messageMap).then((msg) {
-        _documentReference(documentName)
-            .set({"latest_updated_time": message.createdAt});
-      });
-      return const Right(null);
+      final docRef = await counterDoc.add(messageMap);
+      _documentReference(documentName)
+          .set({"latest_updated_time": message.createdAt});
+      return Right(docRef);
     } catch (e) {
       return Left(
           Failure.unexpectedError('Failed to send message: ${e.toString()}'));

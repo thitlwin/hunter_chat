@@ -14,8 +14,10 @@ _ChatMessageDomain _$ChatMessageDomainFromJson(Map<String, dynamic> json) =>
       batchId: (json['batch_id'] as num?)?.toInt(),
       fileUrls:
           (json['files'] as List<dynamic>?)?.map((e) => e as String).toList(),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: const TimestampDateTimeConverter()
+          .fromJson(json['created_at'] as Timestamp),
+      updatedAt: const TimestampDateTimeConverter()
+          .fromJson(json['updated_at'] as Timestamp),
       user: json['user'] == null
           ? null
           : ChatUserDomain.fromJson(json['user'] as Map<String, dynamic>),
@@ -26,6 +28,7 @@ _ChatMessageDomain _$ChatMessageDomainFromJson(Map<String, dynamic> json) =>
       filesNames: (json['file_names'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      isUploading: json['is_uploading'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$ChatMessageDomainToJson(_ChatMessageDomain instance) =>
@@ -35,12 +38,15 @@ Map<String, dynamic> _$ChatMessageDomainToJson(_ChatMessageDomain instance) =>
       'content': instance.content,
       'batch_id': instance.batchId,
       'files': instance.fileUrls,
-      'created_at': instance.createdAt.toIso8601String(),
-      'updated_at': instance.updatedAt.toIso8601String(),
+      'created_at':
+          const TimestampDateTimeConverter().toJson(instance.createdAt),
+      'updated_at':
+          const TimestampDateTimeConverter().toJson(instance.updatedAt),
       'user': instance.user,
       'parent': instance.parent,
       'isReply': instance.isReply,
       'file_names': instance.filesNames,
+      'is_uploading': instance.isUploading,
     };
 
 _ChatUserDomain _$ChatUserDomainFromJson(Map<String, dynamic> json) =>

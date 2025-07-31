@@ -18,17 +18,17 @@ mixin _$ChatMessageDomain {
   @JsonKey(name: "id")
   String? get id;
   @JsonKey(name: "customer_id")
-  int? get userId; // @JsonKey(name: "chatable_type") String? chatableType,
-// @JsonKey(name: "chatable_id") int? chatableId,
+  int? get userId;
   @JsonKey(name: "content")
-  String?
-      get content; // @JsonKey(name: "customer_chat_id") int? customerChatId,
+  String? get content;
   @JsonKey(name: "batch_id")
   int? get batchId;
-  @JsonKey(name: "files")
+  @JsonKey(name: ChatConstants.files_field)
   List<String>? get fileUrls;
+  @TimestampDateTimeConverter()
   @JsonKey(name: "created_at")
   DateTime get createdAt;
+  @TimestampDateTimeConverter()
   @JsonKey(name: "updated_at")
   DateTime get updatedAt;
   @JsonKey(name: "user")
@@ -41,6 +41,8 @@ mixin _$ChatMessageDomain {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @DocumentSnapshotConverter()
   DocumentSnapshot? get documentSnapshot;
+  @JsonKey(name: ChatConstants.isUploading_field)
+  bool get isUploading;
 
   /// Create a copy of ChatMessageDomain
   /// with the given fields replaced by the non-null parameter values.
@@ -73,7 +75,9 @@ mixin _$ChatMessageDomain {
             const DeepCollectionEquality()
                 .equals(other.filesNames, filesNames) &&
             (identical(other.documentSnapshot, documentSnapshot) ||
-                other.documentSnapshot == documentSnapshot));
+                other.documentSnapshot == documentSnapshot) &&
+            (identical(other.isUploading, isUploading) ||
+                other.isUploading == isUploading));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -91,11 +95,12 @@ mixin _$ChatMessageDomain {
       parent,
       isReply,
       const DeepCollectionEquality().hash(filesNames),
-      documentSnapshot);
+      documentSnapshot,
+      isUploading);
 
   @override
   String toString() {
-    return 'ChatMessageDomain(id: $id, userId: $userId, content: $content, batchId: $batchId, fileUrls: $fileUrls, createdAt: $createdAt, updatedAt: $updatedAt, user: $user, parent: $parent, isReply: $isReply, filesNames: $filesNames, documentSnapshot: $documentSnapshot)';
+    return 'ChatMessageDomain(id: $id, userId: $userId, content: $content, batchId: $batchId, fileUrls: $fileUrls, createdAt: $createdAt, updatedAt: $updatedAt, user: $user, parent: $parent, isReply: $isReply, filesNames: $filesNames, documentSnapshot: $documentSnapshot, isUploading: $isUploading)';
   }
 }
 
@@ -110,16 +115,21 @@ abstract mixin class $ChatMessageDomainCopyWith<$Res> {
       @JsonKey(name: "customer_id") int? userId,
       @JsonKey(name: "content") String? content,
       @JsonKey(name: "batch_id") int? batchId,
-      @JsonKey(name: "files") List<String>? fileUrls,
-      @JsonKey(name: "created_at") DateTime createdAt,
-      @JsonKey(name: "updated_at") DateTime updatedAt,
+      @JsonKey(name: ChatConstants.files_field) List<String>? fileUrls,
+      @TimestampDateTimeConverter()
+      @JsonKey(name: "created_at")
+      DateTime createdAt,
+      @TimestampDateTimeConverter()
+      @JsonKey(name: "updated_at")
+      DateTime updatedAt,
       @JsonKey(name: "user") ChatUserDomain? user,
       @JsonKey(name: "parent") ChatMessageDomain? parent,
       bool isReply,
       @JsonKey(name: "file_names") List<String>? filesNames,
       @JsonKey(includeFromJson: false, includeToJson: false)
       @DocumentSnapshotConverter()
-      DocumentSnapshot? documentSnapshot});
+      DocumentSnapshot? documentSnapshot,
+      @JsonKey(name: ChatConstants.isUploading_field) bool isUploading});
 
   $ChatUserDomainCopyWith<$Res>? get user;
   $ChatMessageDomainCopyWith<$Res>? get parent;
@@ -150,6 +160,7 @@ class _$ChatMessageDomainCopyWithImpl<$Res>
     Object? isReply = null,
     Object? filesNames = freezed,
     Object? documentSnapshot = freezed,
+    Object? isUploading = null,
   }) {
     return _then(_self.copyWith(
       id: freezed == id
@@ -200,6 +211,10 @@ class _$ChatMessageDomainCopyWithImpl<$Res>
           ? _self.documentSnapshot
           : documentSnapshot // ignore: cast_nullable_to_non_nullable
               as DocumentSnapshot?,
+      isUploading: null == isUploading
+          ? _self.isUploading
+          : isUploading // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 
@@ -240,16 +255,21 @@ class _ChatMessageDomain implements ChatMessageDomain {
       @JsonKey(name: "customer_id") this.userId,
       @JsonKey(name: "content") this.content,
       @JsonKey(name: "batch_id") this.batchId,
-      @JsonKey(name: "files") final List<String>? fileUrls,
-      @JsonKey(name: "created_at") required this.createdAt,
-      @JsonKey(name: "updated_at") required this.updatedAt,
+      @JsonKey(name: ChatConstants.files_field) final List<String>? fileUrls,
+      @TimestampDateTimeConverter()
+      @JsonKey(name: "created_at")
+      required this.createdAt,
+      @TimestampDateTimeConverter()
+      @JsonKey(name: "updated_at")
+      required this.updatedAt,
       @JsonKey(name: "user") this.user,
       @JsonKey(name: "parent") this.parent,
       this.isReply = false,
       @JsonKey(name: "file_names") final List<String>? filesNames,
       @JsonKey(includeFromJson: false, includeToJson: false)
       @DocumentSnapshotConverter()
-      this.documentSnapshot})
+      this.documentSnapshot,
+      @JsonKey(name: ChatConstants.isUploading_field) this.isUploading = false})
       : _fileUrls = fileUrls,
         _filesNames = filesNames;
   factory _ChatMessageDomain.fromJson(Map<String, dynamic> json) =>
@@ -261,18 +281,15 @@ class _ChatMessageDomain implements ChatMessageDomain {
   @override
   @JsonKey(name: "customer_id")
   final int? userId;
-// @JsonKey(name: "chatable_type") String? chatableType,
-// @JsonKey(name: "chatable_id") int? chatableId,
   @override
   @JsonKey(name: "content")
   final String? content;
-// @JsonKey(name: "customer_chat_id") int? customerChatId,
   @override
   @JsonKey(name: "batch_id")
   final int? batchId;
   final List<String>? _fileUrls;
   @override
-  @JsonKey(name: "files")
+  @JsonKey(name: ChatConstants.files_field)
   List<String>? get fileUrls {
     final value = _fileUrls;
     if (value == null) return null;
@@ -282,9 +299,11 @@ class _ChatMessageDomain implements ChatMessageDomain {
   }
 
   @override
+  @TimestampDateTimeConverter()
   @JsonKey(name: "created_at")
   final DateTime createdAt;
   @override
+  @TimestampDateTimeConverter()
   @JsonKey(name: "updated_at")
   final DateTime updatedAt;
   @override
@@ -311,6 +330,9 @@ class _ChatMessageDomain implements ChatMessageDomain {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @DocumentSnapshotConverter()
   final DocumentSnapshot? documentSnapshot;
+  @override
+  @JsonKey(name: ChatConstants.isUploading_field)
+  final bool isUploading;
 
   /// Create a copy of ChatMessageDomain
   /// with the given fields replaced by the non-null parameter values.
@@ -347,7 +369,9 @@ class _ChatMessageDomain implements ChatMessageDomain {
             const DeepCollectionEquality()
                 .equals(other._filesNames, _filesNames) &&
             (identical(other.documentSnapshot, documentSnapshot) ||
-                other.documentSnapshot == documentSnapshot));
+                other.documentSnapshot == documentSnapshot) &&
+            (identical(other.isUploading, isUploading) ||
+                other.isUploading == isUploading));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -365,11 +389,12 @@ class _ChatMessageDomain implements ChatMessageDomain {
       parent,
       isReply,
       const DeepCollectionEquality().hash(_filesNames),
-      documentSnapshot);
+      documentSnapshot,
+      isUploading);
 
   @override
   String toString() {
-    return 'ChatMessageDomain(id: $id, userId: $userId, content: $content, batchId: $batchId, fileUrls: $fileUrls, createdAt: $createdAt, updatedAt: $updatedAt, user: $user, parent: $parent, isReply: $isReply, filesNames: $filesNames, documentSnapshot: $documentSnapshot)';
+    return 'ChatMessageDomain(id: $id, userId: $userId, content: $content, batchId: $batchId, fileUrls: $fileUrls, createdAt: $createdAt, updatedAt: $updatedAt, user: $user, parent: $parent, isReply: $isReply, filesNames: $filesNames, documentSnapshot: $documentSnapshot, isUploading: $isUploading)';
   }
 }
 
@@ -386,16 +411,21 @@ abstract mixin class _$ChatMessageDomainCopyWith<$Res>
       @JsonKey(name: "customer_id") int? userId,
       @JsonKey(name: "content") String? content,
       @JsonKey(name: "batch_id") int? batchId,
-      @JsonKey(name: "files") List<String>? fileUrls,
-      @JsonKey(name: "created_at") DateTime createdAt,
-      @JsonKey(name: "updated_at") DateTime updatedAt,
+      @JsonKey(name: ChatConstants.files_field) List<String>? fileUrls,
+      @TimestampDateTimeConverter()
+      @JsonKey(name: "created_at")
+      DateTime createdAt,
+      @TimestampDateTimeConverter()
+      @JsonKey(name: "updated_at")
+      DateTime updatedAt,
       @JsonKey(name: "user") ChatUserDomain? user,
       @JsonKey(name: "parent") ChatMessageDomain? parent,
       bool isReply,
       @JsonKey(name: "file_names") List<String>? filesNames,
       @JsonKey(includeFromJson: false, includeToJson: false)
       @DocumentSnapshotConverter()
-      DocumentSnapshot? documentSnapshot});
+      DocumentSnapshot? documentSnapshot,
+      @JsonKey(name: ChatConstants.isUploading_field) bool isUploading});
 
   @override
   $ChatUserDomainCopyWith<$Res>? get user;
@@ -428,6 +458,7 @@ class __$ChatMessageDomainCopyWithImpl<$Res>
     Object? isReply = null,
     Object? filesNames = freezed,
     Object? documentSnapshot = freezed,
+    Object? isUploading = null,
   }) {
     return _then(_ChatMessageDomain(
       id: freezed == id
@@ -478,6 +509,10 @@ class __$ChatMessageDomainCopyWithImpl<$Res>
           ? _self.documentSnapshot
           : documentSnapshot // ignore: cast_nullable_to_non_nullable
               as DocumentSnapshot?,
+      isUploading: null == isUploading
+          ? _self.isUploading
+          : isUploading // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 

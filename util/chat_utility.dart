@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:joy_app/l10n/generated/app_localizations.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 class ChatUtility {
   static String getChatTime(DateTime? timestamp, AppLocalizations locale) {
@@ -26,6 +29,24 @@ class ChatUtility {
       return locale.chatSecAgo(diff.inSeconds);
     } else {
       return locale.chatNow;
+    }
+  }
+
+  static Future<String?> generateThumbnail(String videoUrl) async {
+    try {
+      // Generate a thumbnail from the video URL and store it locally.
+      final thumbnailPath = await VideoThumbnail.thumbnailFile(
+        video: videoUrl,
+        thumbnailPath: (await getTemporaryDirectory()).path,
+        imageFormat: ImageFormat.WEBP,
+        maxHeight: 150,
+        quality: 75,
+      );
+      return thumbnailPath;
+    } catch (e) {
+      debugPrint('=====>>> Failed to generate thumbnail for $videoUrl: $e');
+      // Return null on failure, which will be handled by the FutureBuilder.
+      return null;
     }
   }
 }

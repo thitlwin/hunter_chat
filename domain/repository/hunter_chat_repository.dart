@@ -5,7 +5,7 @@ import 'package:joy_app/src/feature/chat/domain/model/chat_message_domain.dart';
 
 abstract class IHunterChatRepository {
   Stream<List<ChatMessageDomain>> getHunterChatStream(String documentName);
-  Future<Either<Failure, void>> sendHunterChat(
+  Future<Either<Failure, DocumentReference<Object?>>> sendHunterChat(
       String documentName, ChatMessageDomain message);
 
   Future<Either<Failure, List<String>>> uploadChatAttachments(

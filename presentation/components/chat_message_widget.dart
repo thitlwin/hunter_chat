@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:joy_app/gen/assets.gen.dart';
 import 'package:joy_app/l10n/generated/app_localizations.dart';
+import 'package:joy_app/src/common_widgets/screenoverlay_loading_widget.dart';
 import 'package:joy_app/src/feature/chat/domain/model/chat_message_domain.dart';
 import 'package:joy_app/src/feature/chat/presentation/components/circular_image.dart';
 import 'package:joy_app/src/feature/chat/presentation/components/customUrlText.dart';
+import 'package:joy_app/src/feature/chat/presentation/components/video_preview_widget.dart';
 import 'package:joy_app/src/feature/chat/util/chat_utility.dart';
 import 'package:joy_app/src/router/app_routes.dart';
 
@@ -125,16 +129,7 @@ class ChatMessageWidget extends StatelessWidget {
       crossAxisAlignment:
           myMessage ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        if (hasFiles)
-          GestureDetector(
-            onTap: () {
-              FullScreenImageViewerRoute(
-                imageUrls: chat.fileUrls!,
-                initialIndex: 0,
-              ).push(context);
-            },
-            child: _buildAttachmentPreviews(context, chat.fileUrls!),
-          ),
+        if (hasFiles) _buildAttachmentPreviews(context, chat.fileUrls!),
         if (hasContent)
           Padding(
             padding: EdgeInsets.only(top: hasFiles ? 8.0 : 0.0),
@@ -164,55 +159,99 @@ class ChatMessageWidget extends StatelessWidget {
   }
 
   Widget _buildAttachmentPreviews(BuildContext context, List<String> urls) {
-    return Column(
-      children: urls.map((url) {
-        final isImage = _isImageUrl(url);
-        final isVideo = _isVideoUrl(url);
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: isImage || isVideo
-              ? Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(15.0),
-                      child: CachedNetworkImage(
-                        imageUrl: url,
-                        placeholder: (context, url) => Container(
-                          height: 150,
-                          color: Colors.grey[300],
-                          child:
-                              const Center(child: CircularProgressIndicator()),
-                        ),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error),
-                      ),
-                    ),
-                    if (isVideo)
-                      const Icon(
-                        Icons.play_circle_fill,
-                        size: 50,
-                        color: Colors.white70,
-                      ),
-                  ],
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.insert_drive_file,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        Uri.decodeFull(url.split('/').last.split('?').first),
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurface),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+    final imageUrls = urls.where((url) => _isImageUrl(url)).toList();
+    final otherUrls = urls.where((url) => !_isImageUrl(url)).toList();
+
+    final List<Widget> attachmentWidgets = [];
+
+    if (imageUrls.isNotEmpty) {
+      if (imageUrls.length > 1) {
+        // If the urls is image type, display image in grid view
+        attachmentWidgets.add(
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 4,
+              mainAxisSpacing: 4,
+            ),
+            itemCount: imageUrls.length,
+            itemBuilder: (context, index) {
+              final url = imageUrls[index];
+              return GestureDetector(
+                onTap: () {
+                  if (chat.isUploading) return;
+                  FullScreenImageViewerRoute(
+                    imageUrls: imageUrls,
+                    initialIndex: index,
+                  ).push(context);
+                },
+                child: _buildImage(url),
+              );
+            },
+          ),
         );
-      }).toList(),
+      } else {
+        final url = imageUrls.first;
+        attachmentWidgets.add(GestureDetector(
+          onTap: () {
+            if (chat.isUploading) return;
+            FullScreenImageViewerRoute(
+              imageUrls: imageUrls,
+              initialIndex: 0,
+            ).push(context);
+          },
+          child: _buildImage(url),
+        ));
+      }
+    }
+
+    for (final url in otherUrls) {
+      if (_isVideoUrl(url)) {
+        attachmentWidgets.add(
+          GestureDetector(
+            onTap: () {
+              if (chat.isUploading) return;
+              VideoPlayerRoute(videoUrl: url).push(context);
+            },
+            child: VideoPreviewWidget(url: url),
+          ),
+        );
+      } else {
+        // Other file types
+        attachmentWidgets.add(_buildOtherFile(context, url));
+      }
+    }
+
+    return Stack(children: [
+      Column(
+        children: attachmentWidgets.map((widget) => widget).toList(),
+      ),
+      if (chat.isUploading)
+        Positioned(
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: screenOverlayLoadingWidget()),
+    ]);
+  }
+
+  ClipRRect _buildImage(String url) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(15.0),
+      child: chat.isUploading
+          ? _showLocalImage(localFilePath: url)
+          : CachedNetworkImage(
+              imageUrl: url,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: Colors.grey[300],
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              errorWidget: (context, url, error) => const Icon(Icons.error),
+            ),
     );
   }
 
@@ -223,5 +262,33 @@ class ChatMessageWidget extends StatelessWidget {
         lowercasedUrl.endsWith('.jpeg') ||
         lowercasedUrl.endsWith('.gif') ||
         lowercasedUrl.endsWith('.webp');
+  }
+
+  Widget _buildOtherFile(BuildContext context, String url) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.insert_drive_file,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            Uri.decodeFull(url.split('/').last.split('?').first),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  _showLocalImage({required String localFilePath}) {
+    return Padding(
+      padding: const EdgeInsets.all(2.0),
+      child: Image.file(
+        File(localFilePath),
+        fit: BoxFit.cover,
+      ),
+    );
   }
 }

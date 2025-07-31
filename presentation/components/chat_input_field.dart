@@ -185,14 +185,14 @@ class _ChatInputFieldState extends ConsumerState<ChatInputField> {
             FileThumbnailPreviewList(
               files: screenState.otherFiles!,
               isLoading: screenState.isLoading,
-              onRemoveFile: (f) => screenNotifier.removeOtherFile(f),
+              onRemoveFile: (f) => screenNotifier.removeAttachedFile(f),
             ),
           Opacity(
             opacity: screenState.isLoading ? 0.5 : 1.0,
             child: AbsorbPointer(
               absorbing: screenState.isLoading,
               child: NewsFeedAttachmentPicker(
-                isMultiSelect: false,
+                isAllowedMultiImage: true,
                 onSelectImage: (xFile) => screenNotifier.setImageFiles([xFile]),
                 onSelectMultiImages: (list) =>
                     screenNotifier.setImageFiles(list),

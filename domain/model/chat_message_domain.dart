@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:joy_app/src/core/data/local/converter/timestamp_datetime_converter.dart';
+import 'package:joy_app/src/feature/chat/data/chat_constants.dart';
 
 part 'chat_message_domain.freezed.dart';
 part 'chat_message_domain.g.dart';
@@ -9,14 +11,15 @@ abstract class ChatMessageDomain with _$ChatMessageDomain {
   factory ChatMessageDomain({
     @JsonKey(name: "id") String? id,
     @JsonKey(name: "customer_id") int? userId,
-    // @JsonKey(name: "chatable_type") String? chatableType,
-    // @JsonKey(name: "chatable_id") int? chatableId,
     @JsonKey(name: "content") String? content,
-    // @JsonKey(name: "customer_chat_id") int? customerChatId,
     @JsonKey(name: "batch_id") int? batchId,
-    @JsonKey(name: "files") List<String>? fileUrls,
-    @JsonKey(name: "created_at") required DateTime createdAt,
-    @JsonKey(name: "updated_at") required DateTime updatedAt,
+    @JsonKey(name: ChatConstants.files_field) List<String>? fileUrls,
+    @TimestampDateTimeConverter()
+    @JsonKey(name: "created_at")
+    required DateTime createdAt,
+    @TimestampDateTimeConverter()
+    @JsonKey(name: "updated_at")
+    required DateTime updatedAt,
     @JsonKey(name: "user") ChatUserDomain? user,
     @JsonKey(name: "parent") ChatMessageDomain? parent,
     @Default(false) bool isReply,
@@ -24,6 +27,9 @@ abstract class ChatMessageDomain with _$ChatMessageDomain {
     @JsonKey(includeFromJson: false, includeToJson: false)
     @DocumentSnapshotConverter()
     DocumentSnapshot? documentSnapshot,
+    @Default(false)
+    @JsonKey(name: ChatConstants.isUploading_field)
+    bool isUploading,
   }) = _ChatMessageDomain;
 
   factory ChatMessageDomain.fromJson(Map<String, Object?> json) =>

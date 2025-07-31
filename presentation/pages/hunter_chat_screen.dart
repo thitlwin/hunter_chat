@@ -57,19 +57,20 @@ class _HunterChatScreenState extends ConsumerState<HunterChatScreen> {
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final chatProvider = hunterChatScreenNotifierProvider(
+    final chatScreenNotifier = hunterChatScreenNotifierProvider(
       widget.chatEntry,
       widget.batchId,
     );
-    final screenState = ref.watch(chatProvider);
+    final screenState = ref.watch(chatScreenNotifier);
 
-    ref.listen(chatProvider.select((s) => s.value?.messages.length),
+    ref.listen(chatScreenNotifier.select((s) => s.value?.messages.length),
         (previous, next) {
       // This listener triggers when the number of messages changes.
       // We only want to auto-scroll when the current user sends a message.
       if ((previous ?? 0) < (next ?? 0)) {
-        final latestMessage = ref.read(chatProvider).value?.messages.first;
-        final currentUser = ref.read(chatProvider).value?.currentUser;
+        final latestMessage =
+            ref.read(chatScreenNotifier).value?.messages.first;
+        final currentUser = ref.read(chatScreenNotifier).value?.currentUser;
 
         if (latestMessage != null &&
             currentUser != null &&
@@ -110,7 +111,7 @@ class _HunterChatScreenState extends ConsumerState<HunterChatScreen> {
           title: locale.title_error,
           description: err.toString(),
           actionText: locale.try_again,
-          onActionPressed: () => ref.invalidate(chatProvider),
+          onActionPressed: () => ref.invalidate(chatScreenNotifier),
         ),
         data: (state) => Column(
           children: <Widget>[
@@ -122,7 +123,8 @@ class _HunterChatScreenState extends ConsumerState<HunterChatScreen> {
                       title: locale.title_error,
                       description: state.messageKey,
                       actionText: locale.try_again,
-                      onActionPressed: () => ref.invalidate(chatProvider));
+                      onActionPressed: () =>
+                          ref.invalidate(chatScreenNotifier));
                 }
                 if (state.messages.isEmpty) {
                   return EmptyStateWidget(message: locale.empty_chat);
