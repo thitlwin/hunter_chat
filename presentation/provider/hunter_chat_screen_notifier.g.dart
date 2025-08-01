@@ -41,21 +41,15 @@ class ChatMessagesStreamFamily
   const ChatMessagesStreamFamily();
 
   /// See also [chatMessagesStream].
-  ChatMessagesStreamProvider call(
-    String documentName,
-  ) {
-    return ChatMessagesStreamProvider(
-      documentName,
-    );
+  ChatMessagesStreamProvider call(String documentName) {
+    return ChatMessagesStreamProvider(documentName);
   }
 
   @override
   ChatMessagesStreamProvider getProviderOverride(
     covariant ChatMessagesStreamProvider provider,
   ) {
-    return call(
-      provider.documentName,
-    );
+    return call(provider.documentName);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -77,24 +71,19 @@ class ChatMessagesStreamFamily
 class ChatMessagesStreamProvider
     extends AutoDisposeStreamProvider<List<ChatMessageDomain>> {
   /// See also [chatMessagesStream].
-  ChatMessagesStreamProvider(
-    String documentName,
-  ) : this._internal(
-          (ref) => chatMessagesStream(
-            ref as ChatMessagesStreamRef,
-            documentName,
-          ),
-          from: chatMessagesStreamProvider,
-          name: r'chatMessagesStreamProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$chatMessagesStreamHash,
-          dependencies: ChatMessagesStreamFamily._dependencies,
-          allTransitiveDependencies:
-              ChatMessagesStreamFamily._allTransitiveDependencies,
-          documentName: documentName,
-        );
+  ChatMessagesStreamProvider(String documentName)
+    : this._internal(
+        (ref) => chatMessagesStream(ref as ChatMessagesStreamRef, documentName),
+        from: chatMessagesStreamProvider,
+        name: r'chatMessagesStreamProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$chatMessagesStreamHash,
+        dependencies: ChatMessagesStreamFamily._dependencies,
+        allTransitiveDependencies:
+            ChatMessagesStreamFamily._allTransitiveDependencies,
+        documentName: documentName,
+      );
 
   ChatMessagesStreamProvider._internal(
     super._createNotifier, {
@@ -111,7 +100,7 @@ class ChatMessagesStreamProvider
   @override
   Override overrideWith(
     Stream<List<ChatMessageDomain>> Function(ChatMessagesStreamRef provider)
-        create,
+    create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -173,10 +162,7 @@ abstract class _$HunterChatScreenNotifier
   late final ChatEntry chatEntry;
   late final int? batchId;
 
-  FutureOr<ChatScreenState> build(
-    ChatEntry chatEntry,
-    int? batchId,
-  );
+  FutureOr<ChatScreenState> build(ChatEntry chatEntry, int? batchId);
 }
 
 /// See also [HunterChatScreenNotifier].
@@ -190,24 +176,15 @@ class HunterChatScreenNotifierFamily
   const HunterChatScreenNotifierFamily();
 
   /// See also [HunterChatScreenNotifier].
-  HunterChatScreenNotifierProvider call(
-    ChatEntry chatEntry,
-    int? batchId,
-  ) {
-    return HunterChatScreenNotifierProvider(
-      chatEntry,
-      batchId,
-    );
+  HunterChatScreenNotifierProvider call(ChatEntry chatEntry, int? batchId) {
+    return HunterChatScreenNotifierProvider(chatEntry, batchId);
   }
 
   @override
   HunterChatScreenNotifierProvider getProviderOverride(
     covariant HunterChatScreenNotifierProvider provider,
   ) {
-    return call(
-      provider.chatEntry,
-      provider.batchId,
-    );
+    return call(provider.chatEntry, provider.batchId);
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -227,28 +204,28 @@ class HunterChatScreenNotifierFamily
 
 /// See also [HunterChatScreenNotifier].
 class HunterChatScreenNotifierProvider
-    extends AutoDisposeAsyncNotifierProviderImpl<HunterChatScreenNotifier,
-        ChatScreenState> {
+    extends
+        AutoDisposeAsyncNotifierProviderImpl<
+          HunterChatScreenNotifier,
+          ChatScreenState
+        > {
   /// See also [HunterChatScreenNotifier].
-  HunterChatScreenNotifierProvider(
-    ChatEntry chatEntry,
-    int? batchId,
-  ) : this._internal(
-          () => HunterChatScreenNotifier()
-            ..chatEntry = chatEntry
-            ..batchId = batchId,
-          from: hunterChatScreenNotifierProvider,
-          name: r'hunterChatScreenNotifierProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$hunterChatScreenNotifierHash,
-          dependencies: HunterChatScreenNotifierFamily._dependencies,
-          allTransitiveDependencies:
-              HunterChatScreenNotifierFamily._allTransitiveDependencies,
-          chatEntry: chatEntry,
-          batchId: batchId,
-        );
+  HunterChatScreenNotifierProvider(ChatEntry chatEntry, int? batchId)
+    : this._internal(
+        () => HunterChatScreenNotifier()
+          ..chatEntry = chatEntry
+          ..batchId = batchId,
+        from: hunterChatScreenNotifierProvider,
+        name: r'hunterChatScreenNotifierProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$hunterChatScreenNotifierHash,
+        dependencies: HunterChatScreenNotifierFamily._dependencies,
+        allTransitiveDependencies:
+            HunterChatScreenNotifierFamily._allTransitiveDependencies,
+        chatEntry: chatEntry,
+        batchId: batchId,
+      );
 
   HunterChatScreenNotifierProvider._internal(
     super._createNotifier, {
@@ -268,10 +245,7 @@ class HunterChatScreenNotifierProvider
   FutureOr<ChatScreenState> runNotifierBuild(
     covariant HunterChatScreenNotifier notifier,
   ) {
-    return notifier.build(
-      chatEntry,
-      batchId,
-    );
+    return notifier.build(chatEntry, batchId);
   }
 
   @override
@@ -294,8 +268,11 @@ class HunterChatScreenNotifierProvider
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<HunterChatScreenNotifier,
-      ChatScreenState> createElement() {
+  AutoDisposeAsyncNotifierProviderElement<
+    HunterChatScreenNotifier,
+    ChatScreenState
+  >
+  createElement() {
     return _HunterChatScreenNotifierProviderElement(this);
   }
 
@@ -328,8 +305,12 @@ mixin HunterChatScreenNotifierRef
 }
 
 class _HunterChatScreenNotifierProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<HunterChatScreenNotifier,
-        ChatScreenState> with HunterChatScreenNotifierRef {
+    extends
+        AutoDisposeAsyncNotifierProviderElement<
+          HunterChatScreenNotifier,
+          ChatScreenState
+        >
+    with HunterChatScreenNotifierRef {
   _HunterChatScreenNotifierProviderElement(super.provider);
 
   @override
@@ -338,5 +319,6 @@ class _HunterChatScreenNotifierProviderElement
   @override
   int? get batchId => (origin as HunterChatScreenNotifierProvider).batchId;
 }
+
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
