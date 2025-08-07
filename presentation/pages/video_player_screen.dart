@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';

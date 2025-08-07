@@ -13,14 +13,14 @@ String _$hunterChatRepositoryHash() =>
 @ProviderFor(hunterChatRepository)
 final hunterChatRepositoryProvider =
     AutoDisposeProvider<HunterChatRepository>.internal(
-  hunterChatRepository,
-  name: r'hunterChatRepositoryProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$hunterChatRepositoryHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      hunterChatRepository,
+      name: r'hunterChatRepositoryProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$hunterChatRepositoryHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
