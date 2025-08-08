@@ -12,15 +12,12 @@ _ChatMessageDomain _$ChatMessageDomainFromJson(Map<String, dynamic> json) =>
       userId: (json['customer_id'] as num?)?.toInt(),
       content: json['content'] as String?,
       batchId: (json['batch_id'] as num?)?.toInt(),
-      fileUrls: (json['files'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
-      createdAt: const TimestampDateTimeConverter().fromJson(
-        json['created_at'] as Timestamp,
-      ),
-      updatedAt: const TimestampDateTimeConverter().fromJson(
-        json['updated_at'] as Timestamp,
-      ),
+      fileUrls:
+          (json['files'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      createdAt: const TimestampDateTimeConverter()
+          .fromJson(json['created_at'] as Timestamp),
+      updatedAt: const TimestampDateTimeConverter()
+          .fromJson(json['updated_at'] as Timestamp),
       user: json['user'] == null
           ? null
           : ChatUserDomain.fromJson(json['user'] as Map<String, dynamic>),
@@ -34,22 +31,23 @@ _ChatMessageDomain _$ChatMessageDomainFromJson(Map<String, dynamic> json) =>
       isUploading: json['is_uploading'] as bool? ?? false,
     );
 
-Map<String, dynamic> _$ChatMessageDomainToJson(
-  _ChatMessageDomain instance,
-) => <String, dynamic>{
-  'id': instance.id,
-  'customer_id': instance.userId,
-  'content': instance.content,
-  'batch_id': instance.batchId,
-  'files': instance.fileUrls,
-  'created_at': const TimestampDateTimeConverter().toJson(instance.createdAt),
-  'updated_at': const TimestampDateTimeConverter().toJson(instance.updatedAt),
-  'user': instance.user,
-  'parent': instance.parent,
-  'isReply': instance.isReply,
-  'file_names': instance.filesNames,
-  'is_uploading': instance.isUploading,
-};
+Map<String, dynamic> _$ChatMessageDomainToJson(_ChatMessageDomain instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'customer_id': instance.userId,
+      'content': instance.content,
+      'batch_id': instance.batchId,
+      'files': instance.fileUrls,
+      'created_at':
+          const TimestampDateTimeConverter().toJson(instance.createdAt),
+      'updated_at':
+          const TimestampDateTimeConverter().toJson(instance.updatedAt),
+      'user': instance.user,
+      'parent': instance.parent,
+      'isReply': instance.isReply,
+      'file_names': instance.filesNames,
+      'is_uploading': instance.isUploading,
+    };
 
 _ChatUserDomain _$ChatUserDomainFromJson(Map<String, dynamic> json) =>
     _ChatUserDomain(
