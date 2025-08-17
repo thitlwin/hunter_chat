@@ -76,7 +76,7 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
       if (batchId != null) {
         // get chat title
         final selectedChallengeAsyncValue =
-            ref.watch(selectedActiveProgramProvider(batchId: batchId!));
+            ref.watch(selectedServiceProgramProvider(batchId: batchId!));
 
         title = selectedChallengeAsyncValue.maybeWhen(
             data: (data) {

@@ -6,6 +6,54 @@ import 'package:joy_app/src/feature/chat/data/chat_constants.dart';
 part 'chat_message_domain.freezed.dart';
 part 'chat_message_domain.g.dart';
 
+extension ChatMessageDomainExtension on ChatMessageDomain {
+  //  Only other file types has filenames and urls
+  List<(String? name, String? url)> get fileNameUrlPairs {
+    // filter out only other file types that are not images or videos
+    final filteredUrls = (fileUrls ?? [])
+        .where((url) => !_isImageUrl(url) && !_isVideoUrl(url))
+        .toList();
+    final urls = filteredUrls;
+    final names = filesNames ?? [];
+    final length = urls.length > names.length ? urls.length : names.length;
+
+    return List.generate(
+      length,
+      (i) => (
+        i < names.length ? names[i] : null,
+        i < urls.length ? urls[i] : null,
+      ),
+    );
+  }
+
+  // list of images
+  List<String> get imageUrls {
+    return (fileUrls ?? []).where(_isImageUrl).toList();
+  }
+
+  // list of videos
+  List<String> get videoUrls {
+    return (fileUrls ?? []).where(_isVideoUrl).toList();
+  }
+
+  bool _isVideoUrl(String url) {
+    final lowercasedUrl = url.toLowerCase();
+    return lowercasedUrl.endsWith('.mp4') ||
+        lowercasedUrl.endsWith('.mov') ||
+        lowercasedUrl.endsWith('.avi') ||
+        lowercasedUrl.endsWith('.mkv'); // Add other video formats as needed
+  }
+
+  bool _isImageUrl(String url) {
+    final lowercasedUrl = url.toLowerCase();
+    return lowercasedUrl.endsWith('.png') ||
+        lowercasedUrl.endsWith('.jpg') ||
+        lowercasedUrl.endsWith('.jpeg') ||
+        lowercasedUrl.endsWith('.gif') ||
+        lowercasedUrl.endsWith('.webp');
+  }
+}
+
 @freezed
 abstract class ChatMessageDomain with _$ChatMessageDomain {
   factory ChatMessageDomain({

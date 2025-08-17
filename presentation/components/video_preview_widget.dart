@@ -5,8 +5,13 @@ import 'package:joy_app/src/feature/chat/util/chat_utility.dart';
 
 class VideoPreviewWidget extends StatefulWidget {
   final String url;
+  final double height;
 
-  const VideoPreviewWidget({super.key, required this.url});
+  const VideoPreviewWidget({
+    super.key,
+    required this.url,
+    this.height = 150,
+  });
 
   @override
   State<VideoPreviewWidget> createState() => _VideoPreviewWidgetState();
@@ -36,7 +41,7 @@ class _VideoPreviewWidgetState extends State<VideoPreviewWidget> {
                   // If we have a thumbnail, display it from the local file.
                   return Image.file(
                     File(snapshot.data!),
-                    height: 150,
+                    height: widget.height,
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) =>

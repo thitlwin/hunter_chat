@@ -10,6 +10,7 @@ import 'package:joy_app/src/feature/chat/presentation/components/circular_image.
 import 'package:joy_app/src/feature/chat/presentation/components/customUrlText.dart';
 import 'package:joy_app/src/feature/chat/presentation/components/video_preview_widget.dart';
 import 'package:joy_app/src/feature/chat/util/chat_utility.dart';
+import 'package:joy_app/src/feature/news_feed/presentation/components/file_thumbnail_widget.dart';
 import 'package:joy_app/src/router/app_routes.dart';
 
 class ChatMessageWidget extends StatelessWidget {
@@ -66,9 +67,9 @@ class ChatMessageWidget extends StatelessWidget {
                         ? Alignment.centerRight
                         : Alignment.centerLeft,
                     margin: EdgeInsets.only(
-                      right: myMessage ? 10 : (width / 4),
+                      right: myMessage ? 10 : (width / 7),
                       top: 20,
-                      left: myMessage ? (width / 4) : 10,
+                      left: myMessage ? (width / 7) : 10,
                     ),
                     child: Container(
                       padding: const EdgeInsets.all(10),
@@ -150,22 +151,11 @@ class ChatMessageWidget extends StatelessWidget {
     );
   }
 
-  bool _isVideoUrl(String url) {
-    final lowercasedUrl = url.toLowerCase();
-    return lowercasedUrl.endsWith('.mp4') ||
-        lowercasedUrl.endsWith('.mov') ||
-        lowercasedUrl.endsWith('.avi') ||
-        lowercasedUrl.endsWith('.mkv'); // Add other video formats as needed
-  }
-
   Widget _buildAttachmentPreviews(BuildContext context, List<String> urls) {
-    final imageUrls = urls.where((url) => _isImageUrl(url)).toList();
-    final otherUrls = urls.where((url) => !_isImageUrl(url)).toList();
-
     final List<Widget> attachmentWidgets = [];
-
-    if (imageUrls.isNotEmpty) {
-      if (imageUrls.length > 1) {
+// Images list
+    if (chat.imageUrls.isNotEmpty) {
+      if (chat.imageUrls.length > 1) {
         // If the urls is image type, display image in grid view
         attachmentWidgets.add(
           GridView.builder(
@@ -176,14 +166,14 @@ class ChatMessageWidget extends StatelessWidget {
               crossAxisSpacing: 4,
               mainAxisSpacing: 4,
             ),
-            itemCount: imageUrls.length,
+            itemCount: chat.imageUrls.length,
             itemBuilder: (context, index) {
-              final url = imageUrls[index];
+              final url = chat.imageUrls[index];
               return GestureDetector(
                 onTap: () {
                   if (chat.isUploading) return;
                   FullScreenImageViewerRoute(
-                    imageUrls: imageUrls,
+                    imageUrls: chat.imageUrls,
                     initialIndex: index,
                   ).push(context);
                 },
@@ -193,12 +183,12 @@ class ChatMessageWidget extends StatelessWidget {
           ),
         );
       } else {
-        final url = imageUrls.first;
+        final url = chat.imageUrls.first;
         attachmentWidgets.add(GestureDetector(
           onTap: () {
             if (chat.isUploading) return;
             FullScreenImageViewerRoute(
-              imageUrls: imageUrls,
+              imageUrls: chat.imageUrls,
               initialIndex: 0,
             ).push(context);
           },
@@ -207,21 +197,27 @@ class ChatMessageWidget extends StatelessWidget {
       }
     }
 
-    for (final url in otherUrls) {
-      if (_isVideoUrl(url)) {
-        attachmentWidgets.add(
-          GestureDetector(
-            onTap: () {
-              if (chat.isUploading) return;
-              VideoPlayerRoute(videoUrl: url).push(context);
-            },
-            child: VideoPreviewWidget(url: url),
-          ),
-        );
-      } else {
-        // Other file types
-        attachmentWidgets.add(_buildOtherFile(context, url));
-      }
+// Videos list
+    for (final url in chat.videoUrls) {
+      attachmentWidgets.add(
+        GestureDetector(
+          onTap: () {
+            if (chat.isUploading) return;
+            VideoPlayerRoute(videoUrl: url).push(context);
+          },
+          child: VideoPreviewWidget(url: url),
+        ),
+      );
+    }
+
+// Other file types
+    for (final (fName, fUrl) in chat.fileNameUrlPairs) {
+      if (fUrl == null || fUrl.isEmpty) continue;
+      attachmentWidgets.add(
+        GestureDetector(
+          child: FileThumbnailWidget(fileUrl: fUrl, fileName: fName),
+        ),
+      );
     }
 
     return Stack(children: [
@@ -255,32 +251,23 @@ class ChatMessageWidget extends StatelessWidget {
     );
   }
 
-  bool _isImageUrl(String url) {
-    final lowercasedUrl = url.toLowerCase();
-    return lowercasedUrl.endsWith('.png') ||
-        lowercasedUrl.endsWith('.jpg') ||
-        lowercasedUrl.endsWith('.jpeg') ||
-        lowercasedUrl.endsWith('.gif') ||
-        lowercasedUrl.endsWith('.webp');
-  }
-
-  Widget _buildOtherFile(BuildContext context, String url) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.insert_drive_file,
-            color: Theme.of(context).colorScheme.onSurfaceVariant),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            Uri.decodeFull(url.split('/').last.split('?').first),
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
+  // Widget _buildOtherFile(BuildContext context, String url) {
+  //   return Row(
+  //     mainAxisSize: MainAxisSize.min,
+  //     children: [
+  //       Icon(Icons.insert_drive_file,
+  //           color: Theme.of(context).colorScheme.onSurfaceVariant),
+  //       const SizedBox(width: 8),
+  //       Flexible(
+  //         child: Text(
+  //           Uri.decodeFull(url.split('/').last.split('?').first),
+  //           style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+  //           overflow: TextOverflow.ellipsis,
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   _showLocalImage({required String localFilePath}) {
     return Padding(
