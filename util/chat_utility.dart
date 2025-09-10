@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:joy_app/l10n/generated/app_localizations.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -32,20 +35,41 @@ class ChatUtility {
     }
   }
 
-  static Future<String?> generateThumbnail(String videoUrl) async {
+  static Future<String?> generateThumbnail(String videoUrl,
+      {http.Client? httpClient}) async {
     try {
-      // Generate a thumbnail from the video URL and store it locally.
+      // 1. Create temporary file paths for both the downloaded video and the thumbnail.
+      final tempDir = await getTemporaryDirectory();
+      final uniqueId = DateTime.now().millisecondsSinceEpoch;
+      final videoFilePath = p.join(tempDir.path, '$uniqueId.mp4');
+      final thumbFilePath = p.join(tempDir.path, '$uniqueId.webp');
+
+      // 2. Download the video from the URL to the temporary file.
+      final client = httpClient ?? http.Client();
+      final response = await client.get(Uri.parse(videoUrl));
+      if (response.statusCode != 200) {
+        throw Exception('Failed to download video: ${response.statusCode}');
+      }
+      final videoFile = File(videoFilePath);
+      await videoFile.writeAsBytes(response.bodyBytes);
+
+      // 3. Generate a thumbnail from the LOCAL video file.
       final thumbnailPath = await VideoThumbnail.thumbnailFile(
-        video: videoUrl,
-        thumbnailPath: (await getTemporaryDirectory()).path,
+        video: videoFilePath, // Use the local file path here
+        thumbnailPath: thumbFilePath,
         imageFormat: ImageFormat.WEBP,
         maxHeight: 150,
         quality: 75,
       );
+
+      // 4. Clean up the downloaded video file as it's no longer needed.
+      await videoFile.delete();
+
       return thumbnailPath;
     } catch (e) {
+      // Log the error for debugging purposes instead of crashing the app.
       debugPrint('=====>>> Failed to generate thumbnail for $videoUrl: $e');
-      // Return null on failure, which will be handled by the FutureBuilder.
+      // Return null on failure. The UI can then handle this gracefully.
       return null;
     }
   }
