@@ -29,12 +29,12 @@ class HunterChatScreenNotifier extends _$HunterChatScreenNotifier {
     // Watch the user provider to get the current user.
     // By awaiting the future, this notifier will be in a loading state
     // until the user is fetched, and it will rebuild if the user changes.
-    final currentUser = await ref.watch(userProvider.future);
+    final userAsyncV = ref.watch(userProvider);
+    final currentUser =
+        userAsyncV.maybeWhen(data: (data) => data, orElse: () => null);
 
     if (currentUser == null) {
-      // If after loading, the user is still null, it means they are not logged in.
-      // This is an unrecoverable error for a screen that requires a user.
-      throw Exception('Authenticated user not found. Please log in again.');
+      return ChatScreenState.initial().copyWith(isLoading: true);
     }
     final (documentName, chatTitle) =
         _getChatDocumentNameAndTitle(chatEntry, currentUser.id);

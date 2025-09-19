@@ -166,7 +166,7 @@ class _ChatMessagesStreamProviderElement
 }
 
 String _$hunterChatScreenNotifierHash() =>
-    r'e4486a1a1bda2072f41c0e5799a322583c4cc5d4';
+    r'71b7749ee3eaf03d778e9c077de4f921ccc80523';
 
 abstract class _$HunterChatScreenNotifier
     extends BuildlessAutoDisposeAsyncNotifier<ChatScreenState> {
